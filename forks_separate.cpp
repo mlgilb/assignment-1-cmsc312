@@ -15,19 +15,19 @@ int main() {
         while (*shared_int != 10) { sleep(1); }  // Ensure A runs first
         *shared_int = 20;
         printf("20 I AM PROCESS B whose id is: %d\n", getpid());
-
-        pid_t pidC = fork();
-        if (pidC == 0) {  // Process C is forked from B
-            while (*shared_int != 20) { sleep(1); }  // Wait for B to write 20
-            *shared_int = 30;
-            printf("30 I AM PROCESS C whose id is: %d\n", getpid());
-            exit(0);
-        }
-        wait(NULL);
         exit(0);
     }
 
-    // A waits for B, which waits for C
+    pid_t pidC = fork();
+    if (pidC == 0) {  // Child process C
+        while (*shared_int != 20) { sleep(1); }  // Wait for B to write 20
+        *shared_int = 30;
+        printf("30 I AM PROCESS C whose id is: %d\n", getpid());
+        exit(0);
+    }
+
+    // A waits for both children
+    wait(NULL);
     wait(NULL);
 
     // A prints final message
