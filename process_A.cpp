@@ -34,19 +34,19 @@ int main() {
 
     printf("%d %s whose id is: %d\n", *shared_int, shared_str, *shared_pid);
 
-    // wait for c 
-    while (*shared_int < 30) {  
-        sleep(1);
-    }
+    // wait for process b to update first
+    while (*shared_int != 20) sleep(1);
+    printf("%d %s whose id is: %d\n", *shared_int, shared_str, *shared_pid);
 
+    // wait for process c to update next
+    while (*shared_int != 30) sleep(1);
     printf("%d %s whose id is: %d\n", *shared_int, shared_str, *shared_pid);
-    printf("%d %s whose id is: %d\n", *shared_int, shared_str, *shared_pid);
+
     printf("Good Bye World, I am Done!!\n");
 
     shmdt(shared_int);
     shmdt(shared_str);
     shmdt(shared_pid);
-
     shmctl(shmid_int, IPC_RMID, NULL);
     shmctl(shmid_str, IPC_RMID, NULL);
     shmctl(shmid_pid, IPC_RMID, NULL);
