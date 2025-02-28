@@ -15,23 +15,18 @@ using namespace std;
 int main() {
     cout << "I AM CLIENT. ENTER MESSAGE WHICH I WILL PASS TO SERVER (Press <ENTER>):" << endl;
 
-    struct mq_attr attr;
-    attr.mq_flags = 0;
-    attr.mq_maxmsg = 10;  
-    attr.mq_msgsize = MAX_SIZE;
-    attr.mq_curmsgs = 0;
-
-    // Ensure the server queue exists before proceeding
+    // open server queue (client needs this to send messages)
     mqd_t server_mq = mq_open(SERVER_QUEUE, O_WRONLY);
     if (server_mq == -1) {
-        perror("Client failed to open server queue (Is the server running?)");
+        perror("mq_open failed (server might not be running)");
         exit(1);
     }
 
-    // Create and open client message queue
+    // create client queue for responses
+    struct mq_attr attr = {0, 10, MAX_SIZE, 0};
     mqd_t client_mq = mq_open(CLIENT_QUEUE, O_CREAT | O_RDONLY, 0666, &attr);
     if (client_mq == -1) {
-        perror("Client message queue creation failed");
+        perror("mq_open failed (client queue)");
         mq_close(server_mq);
         exit(1);
     }
@@ -39,34 +34,27 @@ int main() {
     char buffer[MAX_SIZE];
 
     while (true) {
-        memset(buffer, 0, MAX_SIZE);
         cout << "ENTER MESSAGE WHICH I WILL PASS TO SERVER (Press <ENTER>): " << endl;
         cin.getline(buffer, MAX_SIZE);
 
-        if (strlen(buffer) == 0) continue;  // Ignore empty input
+        if (strlen(buffer) == 0) continue;  
 
-        // Send message to the server
         if (mq_send(server_mq, buffer, strlen(buffer) + 1, 0) == -1) {
-            perror("Client sending failed");
+            perror("mq_send failed");
             break;
         }
 
-        // Receive the reversed message from the server
-        memset(buffer, 0, MAX_SIZE);
-        ssize_t bytes_read = mq_receive(client_mq, buffer, MAX_SIZE, NULL);
-        if (bytes_read == -1) {
-            perror("Client receiving failed");
+        if (mq_receive(client_mq, buffer, MAX_SIZE, NULL) == -1) {
+            perror("mq_receive failed");
             break;
         }
 
         cout << "THE REVERSED STRING RECEIVED FROM SERVER: " << buffer << endl;
     }
 
-    // Cleanup
     mq_close(server_mq);
     mq_close(client_mq);
     mq_unlink(CLIENT_QUEUE);
 
     return 0;
 }
-
